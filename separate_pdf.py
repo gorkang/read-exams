@@ -1,4 +1,4 @@
-import fitz  # PyMuPDF
+import fitz  # PyMuPDF # sudo apt-get install python3-fitz
 from PIL import Image
 import os
 
