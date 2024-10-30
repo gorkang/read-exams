@@ -4,15 +4,12 @@ DEBUG = True  # Enable debugging mode
 num_questions = 30
 
 input_folder = 'examenes'                # Folder containing input images
-output_folder = 'output_images'          # Folder to save output images
+outputs_folder = 'outputs'               # Base folder for outputs
 show_all_intensities = DEBUG             # Whether to display bubble intensities on images
 overwrite_output_images = True           # Whether to overwrite existing output images
 
 # Parameter for Threshold Adjustment
 THRESHOLD_ADJUSTMENT = 10  # Adjust this value to fine-tune the threshold (can be positive or negative)
-
-# Minimum intensity threshold to consider any bubble as marked
-empty_row_threshold = 225  # Adjust this value based on your images' intensity range
 
 # Base Parameter for Minimum Corner Circle Diameter at Reference Size
 base_min_corner_circle_diameter = 30  # Diameter in pixels at reference dimensions
@@ -58,6 +55,11 @@ import os
 import time
 import matplotlib.pyplot as plt
 from skimage.filters import threshold_otsu  # Import threshold_otsu from skimage.filters
+
+
+output_folder = os.path.join(outputs_folder, 'output_images')          # Folder to save output images
+output_corners_folder = os.path.join(outputs_folder, 'output_corners')  # Folder to save images with detected corners
+
 
 # Define allowed image extensions
 allowed_image_extensions = ('.png', '.jpg', '.jpeg', '.bmp', '.tiff')
@@ -265,10 +267,6 @@ def detect_bubbles(gray_img, corrected_img, params, section_name, global_thresho
                     cv2.putText(corrected_img, intensity_text, text_position,
                                 cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 0), thickness, cv2.LINE_AA)
 
-            # Check if all bubbles in the row are above the empty row threshold
-            if all(intensity > empty_row_threshold for intensity in row_bubble_intensities):
-                continue  # Skip marking this row as it is empty
-
             # Mark responses based on global threshold
             selected_options = []
             adjusted_threshold = global_threshold + threshold_adjustment
@@ -311,10 +309,6 @@ def detect_bubbles(gray_img, corrected_img, params, section_name, global_thresho
                     text_position = (int(x_start), int(y_start - 5))
                     cv2.putText(corrected_img, intensity_text, text_position,
                                 cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 0), thickness, cv2.LINE_AA)
-
-            # Check if all bubbles in the column are above the empty_row_threshold
-            if all(intensity > empty_row_threshold for intensity in col_bubble_intensities):
-                continue  # Skip marking this column as it is empty
 
             # Mark responses based on global threshold
             selected_options = []
@@ -570,8 +564,9 @@ def plot_histogram(dni, intensities, adjusted_threshold, output_folder):
 # Create folders, etc. --------------------------------------------------------------------------------
 
 # Create output folders if they don't exist
+os.makedirs(outputs_folder, exist_ok=True)
 os.makedirs(output_folder, exist_ok=True)
-os.makedirs('output_corners', exist_ok=True)
+os.makedirs(output_corners_folder, exist_ok=True)
 results_df = pd.DataFrame()
 
 # List to store histogram data for each student
@@ -597,7 +592,7 @@ for img_filename in os.listdir(input_folder):
         _, binary_template = cv2.threshold(gray_template, 50, 255, cv2.THRESH_BINARY_INV)
         
         # Detect and correct page orientation for template
-        corrected_template_img, reoriented = detect_and_correct_page_orientation(template_img, gray_template, binary_template, img_filename, "output_corners")
+        corrected_template_img, reoriented = detect_and_correct_page_orientation(template_img, gray_template, binary_template, img_filename, output_corners_folder)
         gray_template = cv2.cvtColor(corrected_template_img, cv2.COLOR_BGR2GRAY)
 
         if reoriented:
@@ -642,7 +637,7 @@ for img_filename in os.listdir(input_folder):
             plt.xlabel('Intensity')
             plt.ylabel('Frequency')
             plt.legend()
-            histogram_path = os.path.join('output_images', 'intensities_template.png')
+            histogram_path = os.path.join(output_folder, 'intensities_template.png')
             plt.savefig(histogram_path)
             plt.close()
 
@@ -713,7 +708,7 @@ for img_filename in os.listdir(input_folder):
         _, binary_img = cv2.threshold(gray_img, 50, 255, cv2.THRESH_BINARY_INV)
         
         # Detect and correct page orientation
-        corrected_img, reoriented = detect_and_correct_page_orientation(img, gray_img, binary_img, img_filename, "output_corners")
+        corrected_img, reoriented = detect_and_correct_page_orientation(img, gray_img, binary_img, img_filename, output_corners_folder)
 
         gray_img = cv2.cvtColor(corrected_img, cv2.COLOR_BGR2GRAY)
 
@@ -975,7 +970,7 @@ for img_filename in os.listdir(input_folder):
             continue  # Skip further processing for this image
 
 # Save the results to a CSV file
-output_csv_filename = 'output.csv'
+output_csv_filename = os.path.join(outputs_folder, 'output.csv')
 results_df.to_csv(output_csv_filename, index=False)
 print(f"CSV file saved as {output_csv_filename}")
 
@@ -985,5 +980,5 @@ for data in histogram_data_list:
         dni=data['dni'],
         intensities=data['intensities'],
         adjusted_threshold=data['adjusted_threshold'],
-        output_folder='output_images'
+        output_folder=output_folder
     )
