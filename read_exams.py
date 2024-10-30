@@ -1,25 +1,22 @@
 # PARAMETERS --------------------------------------------------
-DEBUG = True  # Enable debugging mode
+
+# Enable debugging mode. Will print intensities for each response, and the output_corners image
+DEBUG = True  
 
 num_questions = 30
+options_QUESTIONS = ['A', 'B', 'C', 'D']
+options_length = len(options_QUESTIONS)
 
 input_folder = 'examenes'                # Folder containing input images
 outputs_folder = 'outputs'               # Base folder for outputs
-show_all_intensities = DEBUG             # Whether to display bubble intensities on images
 overwrite_output_images = True           # Whether to overwrite existing output images
 
 # Parameter for Threshold Adjustment
-THRESHOLD_ADJUSTMENT = 10  # Adjust this value to fine-tune the threshold (can be positive or negative)
-
-# Base Parameter for Minimum Corner Circle Diameter at Reference Size
-base_min_corner_circle_diameter = 30  # Diameter in pixels at reference dimensions
-
-corner_proximity_threshold = 0.25        # Threshold to detect corners based on image size
-min_area_threshold_ratio = 0.00003       # Minimum area ratio to consider a contour as a corner
+THRESHOLD_ADJUSTMENT = 15  # Fine-tune the threshold (can be positive or negative)
 
 # Start of boxes (ratios based on image dimensions)
-x_offset_start_ratio_QUESTIONS_DNI = 0.222
 x_offset_start_ratio_GRUPO = 0.75
+x_offset_start_ratio_QUESTIONS_DNI = 0.222
 x_offset_start_ratio_FORMA = 0.845
 
 y_offset_start_ratio_DNI_GRUPO_FORMA = 0.053
@@ -45,6 +42,11 @@ REFERENCE_HEIGHT = 1100
 BASE_FONT_SCALE = 0.35
 BASE_THICKNESS = 1
 
+# Corner detection
+base_min_corner_circle_diameter = 30  # Minimum Corner Circle Diameter at Reference Size in pixels
+corner_proximity_threshold = 0.25        # Threshold to detect corners based on image size
+min_area_threshold_ratio = 0.00003       # Minimum area ratio to consider a contour as a corner
+
 
 # Import libraries and functions -------------------------------
 
@@ -57,9 +59,10 @@ import matplotlib.pyplot as plt
 from skimage.filters import threshold_otsu  # Import threshold_otsu from skimage.filters
 
 
+# Automatic parameters
+show_all_intensities = DEBUG             # Whether to display bubble intensities on images
 output_folder = os.path.join(outputs_folder, 'output_images')          # Folder to save output images
 output_corners_folder = os.path.join(outputs_folder, 'output_corners')  # Folder to save images with detected corners
-
 
 # Define allowed image extensions
 allowed_image_extensions = ('.png', '.jpg', '.jpeg', '.bmp', '.tiff')
@@ -497,7 +500,7 @@ def highlight_empty_rows(corrected_img, empty_rows, params, image_width, image_h
         corrected_img (numpy.ndarray): Image with highlighted bubbles.
     """
     overlay = corrected_img.copy()
-    alpha = 0.4  # Transparency factor
+    alpha = 0.2  # Transparency factor
 
     font_scale, thickness = calculate_scaling_factors(image_width, image_height)
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -521,7 +524,7 @@ def highlight_empty_rows(corrected_img, empty_rows, params, image_width, image_h
             cv2.rectangle(overlay, top_left, bottom_right, (0, 165, 255), -1)  # Orange in BGR
 
             # Optional: Add text indicating no response
-            text = "X"  # Changed from "No" to "X"
+            text = ""  # Text on empty rectangle overlay
             text_size, _ = cv2.getTextSize(text, font, font_scale, thickness)
             text_x = x_start + int((box_size_x - text_size[0]) / 2)
             text_y = y_start + int((box_size_y + text_size[1]) / 2)
@@ -545,7 +548,7 @@ def plot_histogram(dni, intensities, adjusted_threshold, output_folder):
     """
     plt.figure(figsize=(10, 6))
     plt.hist(intensities, bins=50, color='blue', edgecolor='black')
-    plt.axvline(x=adjusted_threshold, color='red', linestyle='--', label=f'Threshold Used: {adjusted_threshold}')
+    plt.axvline(x=adjusted_threshold, color='red', linestyle='--', label=f'Threshold: {adjusted_threshold}')
     plt.title(f'Histogram of Bubble Intensities (DNI: {dni})')
     plt.xlabel('Intensity')
     plt.ylabel('Frequency')
@@ -605,9 +608,9 @@ for img_filename in os.listdir(input_folder):
                     'box_size_y_ratio': box_size_y_ratio_all, 
                     'x_spacing_ratio': x_spacing_ratio, 
                     'y_spacing_ratio': y_spacing_ratio, 
-                    'num_rows': 30, 
-                    'num_cols': 4, 
-                    'options': ['A', 'B', 'C', 'D'],
+                    'num_rows': num_questions, 
+                    'num_cols': options_length, 
+                    'options': options_QUESTIONS,
                     'direction': 'row-wise', 
                     'show_all_intensities': show_all_intensities,
                     'validate_single_selection': False
@@ -629,17 +632,13 @@ for img_filename in os.listdir(input_folder):
             # Apply threshold adjustment
             adjusted_global_threshold_template = global_threshold_template + THRESHOLD_ADJUSTMENT
 
-            # Optional: Save histogram
-            plt.figure(figsize=(10, 6))
-            plt.hist(bubble_intensities, bins=50, color='blue', edgecolor='black')
-            plt.axvline(x=adjusted_global_threshold_template, color='red', linestyle='--', label=f'Threshold Used: {adjusted_global_threshold_template}')
-            plt.title('Histogram of Bubble Intensities (Template)')
-            plt.xlabel('Intensity')
-            plt.ylabel('Frequency')
-            plt.legend()
-            histogram_path = os.path.join(output_folder, 'intensities_template.png')
-            plt.savefig(histogram_path)
-            plt.close()
+            # Plot histogram
+            plot_histogram(
+                    dni="CORRECT_RESPONSES",
+                    intensities=bubble_intensities,
+                    adjusted_threshold=adjusted_global_threshold_template,
+                    output_folder=output_folder
+                )
 
             # Re-run detect_bubbles with the calculated global threshold
             marked_responses_questions, response_positions_questions, _ = detect_bubbles(
@@ -670,6 +669,7 @@ if not template_found:
     exit(1)
 
 
+
 # STUDENT RESPONSES -------------------------------------------------------------------------------------
 
 # Now, iterate through all images again to process student responses
@@ -689,10 +689,10 @@ for img_filename in os.listdir(input_folder):
                 "GRUPO": "", 
                 "FORMA": "", 
                 "image_name": img_filename,
-                "number_of_questions": 30,
+                "number_of_questions": num_questions,
                 "number_of_correct_responses": 0,
                 "number_of_errors": 0,
-                "number_of_no_responses": 30,
+                "number_of_no_responses": num_questions,
                 "final_grade": 0,
                 "processing_status": "Image could not be opened"
             }
@@ -736,9 +736,9 @@ for img_filename in os.listdir(input_folder):
                     'box_size_y_ratio': box_size_y_ratio_all, 
                     'x_spacing_ratio': x_spacing_ratio, 
                     'y_spacing_ratio': y_spacing_ratio, 
-                    'num_rows': 30, 
-                    'num_cols': 4, 
-                    'options': ['A', 'B', 'C', 'D'],
+                    'num_rows': num_questions, 
+                    'num_cols': options_length, 
+                    'options': options_QUESTIONS,
                     'direction': 'row-wise', 
                     'show_all_intensities': show_all_intensities,
                     'validate_single_selection': False
@@ -954,10 +954,10 @@ for img_filename in os.listdir(input_folder):
                 "GRUPO": "", 
                 "FORMA": "", 
                 "image_name": img_filename,
-                "number_of_questions": 30,
+                "number_of_questions": num_questions,
                 "number_of_correct_responses": 0,
                 "number_of_errors": 0,
-                "number_of_no_responses": 30,
+                "number_of_no_responses": num_questions,
                 "final_grade": 0,
                 "processing_status": "Corners not detected"
             }
