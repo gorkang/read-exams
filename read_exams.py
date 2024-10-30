@@ -3,16 +3,23 @@
 # Enable debugging mode. Will print intensities for each response, and the output_corners image
 DEBUG = True  
 
+# Folder containing input images
+input_folder = 'example'                
+
+# Parameter for Threshold Adjustment
+THRESHOLD_ADJUSTMENT = 15  # Fine-tune the threshold (can be positive or negative)
+
+# Exam parameters
 num_questions = 30
 options_QUESTIONS = ['A', 'B', 'C', 'D']
 options_length = len(options_QUESTIONS)
 
-input_folder = 'examenes'                # Folder containing input images
-outputs_folder = 'outputs'               # Base folder for outputs
-overwrite_output_images = True           # Whether to overwrite existing output images
+# Scoring Parameters
+correct_point = 1.0       # Points for a correct answer
+incorrect_point = -0.33  # Points subtracted for an incorrect answer
 
-# Parameter for Threshold Adjustment
-THRESHOLD_ADJUSTMENT = 15  # Fine-tune the threshold (can be positive or negative)
+
+# Response boxes positions ----------------------------------------------------
 
 # Start of boxes (ratios based on image dimensions)
 x_offset_start_ratio_GRUPO = 0.75
@@ -30,9 +37,12 @@ box_size_y_ratio_all = 0.0099
 x_spacing_ratio = 0.062
 y_spacing_ratio = 0.0208
 
-# Scoring Parameters
-correct_point = 1.0       # Points for a correct answer
-incorrect_point = -0.33  # Points subtracted for an incorrect answer
+
+# Other parameters -------------------------------------------------------
+
+# Output folder
+outputs_folder = 'outputs'               # Base folder for outputs
+overwrite_output_images = True           # Whether to overwrite existing output images
 
 # Reference image dimensions (width x height)
 REFERENCE_WIDTH = 800
@@ -60,6 +70,7 @@ from skimage.filters import threshold_otsu  # Import threshold_otsu from skimage
 
 
 # Automatic parameters
+outputs_folder = os.path.join(outputs_folder, input_folder)
 show_all_intensities = DEBUG             # Whether to display bubble intensities on images
 output_folder = os.path.join(outputs_folder, 'output_images')          # Folder to save output images
 output_corners_folder = os.path.join(outputs_folder, 'output_corners')  # Folder to save images with detected corners

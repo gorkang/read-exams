@@ -3,8 +3,8 @@ from PIL import Image
 import os
 
 # Define input PDF file and output folder
-input_pdf = 'exams/IMPRIME_PSI P4 C3520-033_0060_001.pdf'
-output_folder = 'exams'
+input_pdf = 'example/SCANNED_EXAMS.pdf'
+output_folder = 'example'
 
 # Create the output folder if it doesn't exist
 os.makedirs(output_folder, exist_ok=True)
@@ -18,7 +18,7 @@ for page_num in range(pdf_document.page_count):
     page = pdf_document[page_num]
 
     # Define output path for the PNG image
-    output_path = os.path.join(output_folder, f'page_{page_num + 1}.png')
+    output_path = os.path.join(output_folder, f'exam_{page_num + 1}.png')
 
     # Render page as a PNG image with 300 DPI for high quality
     pix = page.get_pixmap(dpi=300)
