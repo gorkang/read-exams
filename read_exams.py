@@ -66,7 +66,8 @@ import pandas as pd
 import os
 import time
 import matplotlib.pyplot as plt
-from skimage.filters import threshold_otsu  # Import threshold_otsu from skimage.filters
+from skimage.filters import threshold_otsu  # sudo apt-get install python3-skimage
+
 
 
 # Automatic parameters
