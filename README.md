@@ -11,6 +11,7 @@ En la carpeta `outputs/[input_folder]` crea:
 
 - un archivo llamado output.csv, con las respuestas de cada imagen y su corrección
 - imágenes para cada examen encontrado y procesado correctamente de `input_folder` con un overlay que muestra las respuestas encontradas, y cuales se puntuan como correctas e incorrectas
+- imagenes para cada examen encontrado y procesado correctamente con un histograma donde se muestra el punto de corte entre respuestas marcadas y no marcadas. Se usa el método Otsu para establecer el threshold.
 
 
 
