@@ -4,10 +4,10 @@
 DEBUG = True  
 
 # Folder containing input images
-input_folder = 'example'                
+input_folder = 'example'
 
 # Parameter for Threshold Adjustment
-THRESHOLD_ADJUSTMENT = 15  # Fine-tune the threshold (can be positive or negative)
+THRESHOLD_ADJUSTMENT = 5  # Fine-tune the threshold (can be positive or negative)
 
 # Exam parameters
 num_questions = 30
