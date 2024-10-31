@@ -810,14 +810,27 @@ for img_filename in os.listdir(input_folder):
                 marked_responses[section_name] = mr
                 response_positions[section_name] = rp
 
+
+            # THRESHOLD CALCULATION ----------------------------------------------
+
             # Convert intensities to NumPy array
             intensity_array = np.array(all_bubble_intensities, dtype=np.uint8)
 
+            # OTSU ---
+            
             # Calculate the global threshold using threshold_otsu
             global_threshold = threshold_otsu(intensity_array)
+
+
+            # Works well for empty pages. 
+            #global_threshold = reference_intensity - reference_intensity * .2
+
             print(f"Global threshold for {img_filename}: {global_threshold}")
 
-            # Apply threshold adjustment
+            # END THRESHOLD CALCULATION ----------------------------------------------
+
+
+            # Apply threshold adjustment (only used for histogram)
             adjusted_global_threshold = global_threshold + THRESHOLD_ADJUSTMENT
 
             # Second pass: Re-process each section using the adjusted global threshold
@@ -837,10 +850,11 @@ for img_filename in os.listdir(input_folder):
             dni_responses = marked_responses['DNI']
             for col in range(1, sections_params['DNI']['num_cols'] + 1):
                 responses = dni_responses.get(col, [])
-                if responses:
-                    dni_value += responses[0]  # Either a single digit or 'X'
+                if len(responses) == 1:
+                    dni_value += responses[0]  # Only one bubble marked, take it
                 else:
-                    dni_value += 'X'  # No response detected
+                    dni_value += 'X'  # No response or multiple responses detected
+
 
             dni_clean = dni_value.strip() if dni_value.strip() else 'X'  # For filenames
 
@@ -856,20 +870,20 @@ for img_filename in os.listdir(input_folder):
             grupo_responses = marked_responses['GRUPO']
             for col in range(1, sections_params['GRUPO']['num_cols'] + 1):
                 responses = grupo_responses.get(col, [])
-                if responses:
-                    grupo_response += responses[0]  # Either a single digit or 'X'
+                if len(responses) == 1:
+                    grupo_response += responses[0]  # Only one bubble marked
                 else:
-                    grupo_response += 'X'  # No response detected
+                    grupo_response += 'X'  # Multiple or no bubbles marked
 
             # Process FORMA response with validation
             forma_response = ''
             forma_responses = marked_responses['FORMA']
             for col in range(1, sections_params['FORMA']['num_cols'] + 1):
                 responses = forma_responses.get(col, [])
-                if responses:
-                    forma_response += responses[0]  # Either a single digit or 'X'
+                if len(responses) == 1:
+                    forma_response += responses[0]  # Only one bubble marked
                 else:
-                    forma_response += 'X'  # No response detected
+                    forma_response += 'X'  # Multiple or no bubbles marked
 
             # Compare QUESTIONS responses with correct answers
             num_correct = 0
