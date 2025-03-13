@@ -15,10 +15,12 @@ exec(open('py/correct_responses_template.py').read())
 
 
 # Create folders, etc. --------------------------------------------------------------------------------
+intensities_path = os.path.join(outputs_folder, f'output_intensities/')
 
 # Create output folders if they don't exist
 os.makedirs(outputs_folder, exist_ok=True)
-os.makedirs(output_folder, exist_ok=True)
+os.makedirs(output_images_folder, exist_ok=True)
+os.makedirs(intensities_path, exist_ok=True)
 os.makedirs(output_corners_folder, exist_ok=True)
 results_df = pd.DataFrame()
 
@@ -343,7 +345,7 @@ for img_filename in os.listdir(input_folder):
             
             # Save overlay image
             dni_clean = dni_value.strip() if dni_value.strip() else 'X'  # Ensure correct dni_clean
-            output_image_path = os.path.join(output_folder, f"{dni_clean}.png") if overwrite_output_images else generate_unique_filename(output_folder, dni_clean)
+            output_image_path = os.path.join(output_images_folder, f"{dni_clean}.png") if overwrite_output_images else generate_unique_filename(output_images_folder, dni_clean)
             cv2.imwrite(output_image_path, resized_img)  # Save the resized image
             print(f"Processed and saved overlay image for {img_filename} as {output_image_path}")
         else:
@@ -380,5 +382,5 @@ for data in histogram_data_list:
         dni=data['dni'],
         intensities=data['intensities'],
         adjusted_threshold=data['adjusted_threshold'],
-        output_folder=output_folder
+        output_folder=outputs_folder
     )

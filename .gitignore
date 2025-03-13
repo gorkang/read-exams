@@ -1,0 +1,16 @@
+OLD
+examenes
+
+# Ignore all files and subdirectories in outputs/
+outputs/*
+
+# Except for the outputs/example/ directory
+!outputs/example/
+
+# Include all contents inside outputs/example/
+!outputs/example/**
+
+admin/
+
+inputs/exam
+inputs/Pensamiento*

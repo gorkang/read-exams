@@ -4,7 +4,7 @@
 DEBUG = True  
 
 # Folder containing input images
-input_subfolder = 'Pensamiento'
+input_subfolder = 'Pensamiento-TAF'
 
 # Parameter for Threshold Adjustment
 THRESHOLD_ADJUSTMENT = 5  # Fine-tune the threshold (can be positive or negative)

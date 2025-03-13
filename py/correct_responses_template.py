@@ -39,6 +39,7 @@ def correct_responses_template(input_folder):
             gray_template = cv2.cvtColor(template_img, cv2.COLOR_BGR2GRAY)
             _, binary_template = cv2.threshold(gray_template, 50, 255, cv2.THRESH_BINARY_INV)
 
+            # Detect and correct page orientation for template
             corrected_template_img, reoriented = detect_and_correct_page_orientation(template_img, gray_template, binary_template, img_filename, output_corners_folder)
             gray_template = cv2.cvtColor(corrected_template_img, cv2.COLOR_BGR2GRAY)
 
@@ -73,20 +74,25 @@ def correct_responses_template(input_folder):
                         'validate_single_selection': True
                     }
                 }
+
+                # First call to detect_bubbles to collect intensities
                 _, _, bubble_intensities = detect_bubbles(
                     gray_template, corrected_template_img, sections_params['QUESTIONS'], 'QUESTIONS',
                     global_threshold=0
                 )
 
+                # Convert intensities to NumPy array
                 intensity_array = np.array(bubble_intensities, dtype=np.uint8)
+                # Calculate the global threshold using threshold_otsu
                 global_threshold_template = threshold_otsu(intensity_array, nbins=30)
+                # Apply threshold adjustment
                 adjusted_global_threshold_template = global_threshold_template + THRESHOLD_ADJUSTMENT
 
                 plot_histogram(
                     dni="CORRECT_RESPONSES",
                     intensities=bubble_intensities,
                     adjusted_threshold=adjusted_global_threshold_template,
-                    output_folder=output_folder
+                    output_folder=outputs_folder
                 )
 
                 marked_responses_questions, _, _ = detect_bubbles(
@@ -101,10 +107,13 @@ def correct_responses_template(input_folder):
                     threshold_adjustment=THRESHOLD_ADJUSTMENT
                 )
 
-                output_template_image_path = os.path.join(output_folder, f"CORRECT_RESPONSES_{img_filename}.png")
+                # Assuming `corrected_template_img` is the final processed overlay of the template
+                output_template_image_path = os.path.join(output_images_folder, f"{img_filename}")
+                # output_template_image_path = os.path.join(output_folder, f"CORRECT_RESPONSES_{img_filename}.png")
                 cv2.imwrite(output_template_image_path, corrected_template_img)
                 print(f"Template overlay saved as {output_template_image_path}")
 
+                 # Extract correct answers
                 correct_answers = {}
                 for question_num in marked_responses_questions:
                     if marked_responses_questions[question_num]:
@@ -125,6 +134,7 @@ def correct_responses_template(input_folder):
                 
                 #FORMA = marked_responses_forma[2][0] #ensure FORMA is a single value, not list.
 
+                # Add FORMA to correct_answers
                 correct_answers["FORMA"] = forma_response
 
                 all_correct_answers[forma_response] = correct_answers

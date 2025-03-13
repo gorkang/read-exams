@@ -46,7 +46,7 @@ min_area_threshold_ratio = 0.00003       # Minimum area ratio to consider a cont
 input_folder = os.path.join("inputs", input_subfolder)
 outputs_folder = os.path.join(outputs_folder, input_subfolder)
 show_all_intensities = DEBUG             # Whether to display bubble intensities on images
-output_folder = os.path.join(outputs_folder, 'output_images')          # Folder to save output images
+output_images_folder = os.path.join(outputs_folder, 'output_images')          # Folder to save output images
 output_corners_folder = os.path.join(outputs_folder, 'output_corners')  # Folder to save images with detected corners
 
 # Define allowed image extensions

@@ -501,7 +501,7 @@ def plot_histogram(dni, intensities, adjusted_threshold, output_folder):
     x_min, x_max = min(intensities), max(intensities)
     plt.xticks(np.linspace(x_min, x_max, 10))
 
-    histogram_path = os.path.join(output_folder, f'{dni}_intensities.png')
+    histogram_path = os.path.join(outputs_folder, f'output_intensities/{dni}_intensities.png')
     plt.savefig(histogram_path)
     plt.close()
     print(f"Saved histogram for DNI {dni} at {histogram_path}")
