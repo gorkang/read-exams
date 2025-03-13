@@ -1,16 +1,23 @@
+# Define input PDF folder and output folder
+input_folder = 'inputs/Pensamiento/'
+output_folder = input_folder #'inputs/Pensamiento'
+
+
+
 import fitz  # PyMuPDF # sudo apt-get install python3-fitz
 from PIL import Image
 import os
 
-# Define input PDF file and output folder
-input_pdf = 'example/SCANNED_EXAMS.pdf'
-output_folder = 'example'
+exec(open('py/merge_pdfs_in_folder.py').read())
+
 
 # Create the output folder if it doesn't exist
 os.makedirs(output_folder, exist_ok=True)
 
 # Open the PDF file
-pdf_document = fitz.open(input_pdf)
+# pdf_document = fitz.open(input_pdf)
+
+pdf_document = merge_pdfs_in_folder(input_folder)
 
 # Iterate over each page in the PDF
 for page_num in range(pdf_document.page_count):
