@@ -5,6 +5,17 @@ import os
 
 # Response boxes positions ----------------------------------------------------
 
+# --- Configuration for two-column layout ---
+# Define the number of questions that fit in the first column.
+# If num_questions (total) is greater than this, a second column is assumed.
+NUM_QUESTIONS_FIRST_COLUMN = 30
+# --- End Configuration ---
+
+# SEGUNDA COLUMNA QUESTIONS para cuando hay mas de 33 preguntas
+x_offset_start_ratio_QUESTIONS2 = 0.596 # DONDE EMPIEZAN EJE x
+num_questions2 = num_questions - 33# ES  num_questions  33
+# ------------------------------
+
 # Start of boxes (ratios based on image dimensions)
 x_offset_start_ratio_GRUPO = 0.75
 x_offset_start_ratio_QUESTIONS_DNI = 0.222

@@ -75,69 +75,112 @@ def correct_responses_template(input_folder):
                     }
                 }
 
-                # First call to detect_bubbles to collect intensities
-                _, _, bubble_intensities = detect_bubbles(
-                    gray_template, corrected_template_img, sections_params['QUESTIONS'], 'QUESTIONS',
-                    global_threshold=0
-                )
+            # Add parameters for the second question column if needed
+            if num_questions > NUM_QUESTIONS_FIRST_COLUMN:
+                num_questions_col2 = num_questions - NUM_QUESTIONS_FIRST_COLUMN
+                sections_params['QUESTIONS2'] = {
+                                'x_offset_start_ratio': x_offset_start_ratio_QUESTIONS2, # Ensure this is defined in global params
+                                'y_offset_start_ratio': y_offset_start_ratio_QUESTIONS, # Assuming same vertical start as first column
+                                'box_size_x_ratio': box_size_x_ratio_all,
+                                'box_size_y_ratio': box_size_y_ratio_all,
+                                'x_spacing_ratio': x_spacing_ratio,
+                                'y_spacing_ratio': y_spacing_ratio,
+                                'num_rows': num_questions_col2, # Number of questions in the second column
+                                'num_cols': options_length,
+                                'options': options_QUESTIONS,
+                                'direction': 'row-wise',
+                                'show_all_intensities': show_all_intensities,
+                                'validate_single_selection': False
+                            }
 
-                # Convert intensities to NumPy array
-                intensity_array = np.array(bubble_intensities, dtype=np.uint8)
-                # Calculate the global threshold using threshold_otsu
-                global_threshold_template = threshold_otsu(intensity_array, nbins=30)
-                # Apply threshold adjustment
-                adjusted_global_threshold_template = global_threshold_template + THRESHOLD_ADJUSTMENT
 
-                plot_histogram(
-                    dni="CORRECT_RESPONSES",
-                    intensities=bubble_intensities,
-                    adjusted_threshold=adjusted_global_threshold_template,
-                    output_folder=outputs_folder
-                )
+            # First call to detect_bubbles to collect intensities (current logic bases this on 'QUESTIONS' only)
+            _, _, bubble_intensities = detect_bubbles(
+                gray_template, corrected_template_img, sections_params['QUESTIONS'], 'QUESTIONS',
+                global_threshold=0
+            )
 
-                marked_responses_questions, _, _ = detect_bubbles(
-                    gray_template, corrected_template_img, sections_params['QUESTIONS'], 'QUESTIONS',
+            # Convert intensities to NumPy array
+            intensity_array = np.array(bubble_intensities, dtype=np.uint8)
+            # Calculate the global threshold using threshold_otsu
+            global_threshold_template = threshold_otsu(intensity_array, nbins=30) # Assuming nbins=30
+            # Apply threshold adjustment
+            adjusted_global_threshold_template = global_threshold_template + THRESHOLD_ADJUSTMENT # Assuming THRESHOLD_ADJUSTMENT is defined
+
+            plot_histogram(
+                dni=f"CORRECT_RESPONSES_TEMPLATE_{os.path.splitext(img_filename)[0]}", # Made DNI in plot unique per template file
+                intensities=bubble_intensities,
+                adjusted_threshold=adjusted_global_threshold_template,
+                output_folder=outputs_folder # Ensure 'outputs_folder' is accessible here
+            )
+
+            marked_responses_questions, _, _ = detect_bubbles(
+                gray_template, corrected_template_img, sections_params['QUESTIONS'], 'QUESTIONS',
+                global_threshold=global_threshold_template,
+                threshold_adjustment=THRESHOLD_ADJUSTMENT
+            )
+
+            marked_responses_forma, _, _ = detect_bubbles(
+                gray_template, corrected_template_img, sections_params['FORMA'], 'FORMA',
+                global_threshold=global_threshold_template,
+                threshold_adjustment=THRESHOLD_ADJUSTMENT
+            )
+
+            # --- START: Added logic for QUESTIONS2 ---
+            marked_responses_questions2 = {}
+            if num_questions > NUM_QUESTIONS_FIRST_COLUMN and 'QUESTIONS2' in sections_params:
+                marked_responses_questions2, _, _ = detect_bubbles(
+                    gray_template, corrected_template_img, sections_params['QUESTIONS2'], 'QUESTIONS2',
                     global_threshold=global_threshold_template,
                     threshold_adjustment=THRESHOLD_ADJUSTMENT
                 )
+            # --- END: Added logic for QUESTIONS2 ---
 
-                marked_responses_forma, _, _ = detect_bubbles(
-                    gray_template, corrected_template_img, sections_params['FORMA'], 'FORMA',
-                    global_threshold=global_threshold_template,
-                    threshold_adjustment=THRESHOLD_ADJUSTMENT
-                )
+            # Assuming `corrected_template_img` is the final processed overlay of the template
+            output_template_image_path = os.path.join(output_images_folder, f"{img_filename}") # Ensure 'output_images_folder' is accessible
+            cv2.imwrite(output_template_image_path, corrected_template_img)
+            print(f"Template overlay saved as {output_template_image_path}")
 
-                # Assuming `corrected_template_img` is the final processed overlay of the template
-                output_template_image_path = os.path.join(output_images_folder, f"{img_filename}")
-                # output_template_image_path = os.path.join(output_folder, f"CORRECT_RESPONSES_{img_filename}.png")
-                cv2.imwrite(output_template_image_path, corrected_template_img)
-                print(f"Template overlay saved as {output_template_image_path}")
+            # --- START: Modified logic for extracting correct answers ---
+            # Combine question responses from both columns (if applicable)
+            marked_responses_all_questions_template = {}
 
-                 # Extract correct answers
-                correct_answers = {}
-                for question_num in marked_responses_questions:
-                    if marked_responses_questions[question_num]:
-                        correct_answers[question_num] = marked_responses_questions[question_num][0]
-                    else:
-                        correct_answers[question_num] = None
+            # Responses from the first column (QUESTIONS)
+            for q_num, resp_list in marked_responses_questions.items():
+                # q_num here is local to the 'QUESTIONS' section (e.g., 1 to NUM_QUESTIONS_FIRST_COLUMN)
+                marked_responses_all_questions_template[q_num] = resp_list
+            
+            # Responses from the second column (QUESTIONS2), if it exists
+            if num_questions > NUM_QUESTIONS_FIRST_COLUMN and marked_responses_questions2:
+                for q_local, resp_list in marked_responses_questions2.items():
+                    # q_local here is local to the 'QUESTIONS2' section (e.g., 1 to num_questions_col2)
+                    # Convert to global question number
+                    global_q_num = q_local + NUM_QUESTIONS_FIRST_COLUMN 
+                    marked_responses_all_questions_template[global_q_num] = resp_list
+            
+            # Extract correct answers using combined responses
+            correct_answers = {}
+            # Iterate from 1 up to the total number of questions (e.g., 60, defined by global 'num_questions')
+            for question_num_global in range(1, num_questions + 1): 
+                response_list_for_q = marked_responses_all_questions_template.get(question_num_global, [])
+                if response_list_for_q: # Template should ideally have one marked answer
+                    correct_answers[question_num_global] = response_list_for_q[0]
+                else:
+                    correct_answers[question_num_global] = None # No answer marked for this question in the template
+            # --- END: Modified logic for extracting correct answers ---
 
-                # Process FORMA response with validation
-                forma_response = ''
-                forma_responses = marked_responses_forma
-                for col in range(1, sections_params['FORMA']['num_cols'] + 1):
-                    responses = forma_responses.get(col, [])
-                    if len(responses) == 1:
-                        forma_response += responses[0]  # Only one bubble marked
-                    else:
-                        forma_response += 'X'  # Multiple or no bubbles marked
+            # Process FORMA response (existing logic should be fine)
+            forma_response = ''
+            forma_responses_map = marked_responses_forma # Use the fetched forma responses
+            for col in range(1, sections_params['FORMA']['num_cols'] + 1): # Iterate through columns of FORMA
+                responses_in_col = forma_responses_map.get(col, [])
+                if len(responses_in_col) == 1:
+                    forma_response += responses_in_col[0]  # Only one bubble marked
+                else:
+                    forma_response += 'X'  # Multiple or no bubbles marked, or error
 
-                
-                #FORMA = marked_responses_forma[2][0] #ensure FORMA is a single value, not list.
-
-                # Add FORMA to correct_answers
-                correct_answers["FORMA"] = forma_response
-
-                all_correct_answers[forma_response] = correct_answers
-                print(f"Template image {img_filename} processed successfully.")
-
+            correct_answers["FORMA"] = forma_response
+            all_correct_answers[forma_response] = correct_answers
+            print(f"Template image {img_filename} processed successfully.")
+            
     return all_correct_answers
